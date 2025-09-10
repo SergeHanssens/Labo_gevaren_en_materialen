@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Labo Gevaren- & Materialensymbolen — Trainer</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background:#0b1220; color:#eef2f7;}
+    header { padding: 16px 20px; background: #111a2e; position: sticky; top:0; z-index: 10; border-bottom: 1px solid #1f2a44;}
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .sub { color:#9bb0d3; font-size: 13px; }
+    main { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 12px; margin-bottom: 18px; }
+    select, button, input[type="text"] { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid #314061; background: #0f1830; color: #e6ecff;}
+    button { cursor: pointer; font-weight: 600; }
+    button.primary { background: #365cff; border-color:#365cff; color: white; }
+    button.ghost { background: #0b1220; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .card { background:#0f1830; border:1px solid #243155; border-radius: 16px; padding: 16px; }
+    .row { display:flex; gap:14px; align-items:center; flex-wrap: wrap; }
+    .flash { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height: 360px; gap: 16px; text-align: center;}
+    .flash .symbol { max-width: 220px; max-height: 220px; display:block; }
+    .flash .label { font-size: 18px; }
+    .stack { display:grid; gap:10px; }
+    .qbox { padding: 16px; border-radius: 12px; background: #0b142b; border:1px solid #223157; }
+    .grid { display:grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); }
+    .pair { display:grid; grid-template-columns: 1fr; gap:8px; align-items:center; }
+    .pair img { max-height: 70px; max-width: 100%; margin:auto; display:block; }
+    .stat { font-size: 13px; color:#9bb0d3; }
+    .pill { display:inline-block; padding:4px 10px; border-radius: 999px; border:1px solid #2b3b64; background:#111b34; font-size:12px; color:#cdd9ff; }
+    .ok { color:#76ffb3; }
+    .bad { color:#ff8f8f; }
+    .hidden { display:none !important; }
+    .footer { color:#7ea0ff; font-size:12px; margin-top: 10px;}
+    .hint { font-size: 12px; color:#9bb0d3;}
+    .mc-option { padding: 10px; border:1px solid #2b3b64; border-radius: 10px; background:#0d1530; cursor:pointer; }
+    .mc-option.correct { border-color: #1c7c4a; background: #0e1f16; }
+    .mc-option.wrong { border-color:#7c1c1c; background:#1f0e0e; }
+    .two-cols { display:grid; gap:14px; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); }
+    .right { text-align:right; }
+    .img-sm { max-height: 100px; }
+    .suggestions { position:relative; }
+    .suggestions-list { position:absolute; inset: auto 0 0 0; transform: translateY(100%); background:#0f1830; border:1px solid #314061; border-radius: 12px; padding:8px; max-height:180px; overflow:auto; z-index: 5;}
+    .suggestions-list div { padding:6px 8px; cursor:pointer; border-radius:8px;}
+    .suggestions-list div:hover { background:#172246;}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Labo Gevaren- &amp; Materialensymbolen — Trainer</h1>
+    <div class="sub">Gebaseerd <strong>uitsluitend</strong> op de twee meegeleverde documenten. Afbeeldingen worden geladen vanaf <span class="pill">sergehanssens.github.io/Labo_gevaren_en_materialen</span></div>
+  </header>
+  <main>
+    <div class="controls card">
+      <div class="row">
+        <div style="flex:1">
+          <label>Dataset</label>
+          <select id="dataset">
+            <option value="gevaren">Gevarensymbolen</option>
+            <option value="materialen">Materialen</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label>Oefening</label>
+          <select id="mode">
+            <option value="flash">Flashcards</option>
+            <option value="mc_sym_ben">Meerkeuze: symbool → benaming</option>
+            <option value="mc_sym_uitleg">Meerkeuze: symbool → uitleg</option>
+            <option value="mc_ben_uitleg">Meerkeuze: benaming → uitleg</option>
+            <option value="mc_ben_sym">Meerkeuze: benaming → symbool</option>
+            <option value="mc_uitleg_sym">Meerkeuze: uitleg → symbool</option>
+            <option value="mc_uitleg_ben">Meerkeuze: uitleg → benaming</option>
+            <option value="match_ben_uitleg">Combinatie (tekst-tekst): benaming ↔ uitleg</option>
+            <option value="match_uitleg_ben">Combinatie (tekst-tekst): uitleg ↔ benaming</option>
+            <option value="match_sym_uitleg">Combinatie (afbeelding-tekst): symbool ↔ uitleg</option>
+            <option value="match_sym_ben">Combinatie (afbeelding-tekst): symbool ↔ benaming</option>
+            <option value="fill_predict_sym_ben">Invulvraag (woordvoorspeller): symbool → benaming</option>
+          </select>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button id="start" class="primary">Start / Volgende</button>
+        </div>
+        <div class="right" style="flex:1">
+          <div class="stat">Juist: <span id="s-correct">0</span> &nbsp; Fout: <span id="s-wrong">0</span></div>
+          <div class="hint">Stats worden per modus & dataset in je browser opgeslagen.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="stage" class="card"></div>
+
+    <div class="footer">
+      <p>Deze trainer gebruikt <em>alleen</em> de benamingen en uitleg exact zoals ze in de pdf’s staan.</p>
+    </div>
+  </main>
+
+  <script>
+  // ---------- DATA ----------
+  const IMG_BASE = {
+    gevaren: "https://sergehanssens.github.io/Labo_gevaren_en_materialen/images/gevarensymbolen/",
+    materialen: "https://sergehanssens.github.io/Labo_gevaren_en_materialen/images/materialen/",
+  };
+
+  // Gevarensymbolen — exact uit Gevarensymbolen.pdf
+  const DATA_GEVAREN = [
+    { img:"houder_onder_druk.png", benaming:"Houder onder druk", uitleg:"Gas onder druk, kan exploderen bij verhitting" },
+    { img:"ontvlambaar.png", benaming:"Ontvlambaar", uitleg:"Kan gemakkelijk vlam vatten" },
+    { img:"corrosief_bijtend.png", benaming:"Corrosief (bijtend)", uitleg:"Kan huid, ogen en materialen aantasten" },
+    { img:"schadelijk.png", benaming:"Schadelijk", uitleg:"Kan schade veroorzaken aan de gezondheid" },
+    { img:"schadelijk_voor_de_gezondheid_op_lange_termijn.png", benaming:"Schadelijk voor de gezondheid op lange termijn", uitleg:"Langdurige blootstelling kan ernstige gezondheidsschade veroorzaken" },
+    { img:"explosief.png", benaming:"Explosief", uitleg:"Kan exploderen door warmte, vonken, wrijving of schokken" },
+    { img:"toxisch_giftig.png", benaming:"Toxisch (giftig)", uitleg:"Zeer giftig, kan ernstige vergiftiging of de dood veroorzaken" },
+    { img:"brand_bevorderend_oxiderend.png", benaming:"Brand bevorderend (oxiderend)", uitleg:"Kan branden veroorzaken of verergeren" },
+    { img:"milieugevaarlijk.png", benaming:"Milieugevaarlijk", uitleg:"Schadelijk voor het milieu en waterleven" },
+  ];
+
+  // Materialen — exact uit Materialen.pdf
+  const DATA_MATERIALEN = [
+    { img:"Lintmeter_3m.png", benaming:"Lintmeter 3m", uitleg:"Voor het meten van afstanden" },
+    { img:"Lintmeter_8m.png", benaming:"Lintmeter 8m", uitleg:"Voor het meten van afstanden" },
+    { img:"Lasermeter.png", benaming:"Lasermeter", uitleg:"Voor het meten van afstanden" },
+
+    { img:"Bekerglas_maatbeker.png", benaming:"Bekerglas (maatbeker)", uitleg:"Voor het meten en mengen van vloeistoffen" },
+    { img:"Bolkoeler.png", benaming:"Bolkoeler", uitleg:"Voor koeling tijdens reacties" },
+    { img:"buchnerfilter.png", benaming:"Büchnerfilter", uitleg:"Voor filtratie onder vacuüm" },
+
+    { img:"Buret.png", benaming:"Buret", uitleg:"Voor nauwkeurige titraties" },
+    { img:"Cuvet.png", benaming:"Cuvet", uitleg:"Voor spectroscopische metingen" },
+    { img:"Capillair.png", benaming:"Capillair", uitleg:"Voor kleine volumes en dunne lagen" },
+
+    { img:"Erlenmeyer.png", benaming:"Erlenmeyer", uitleg:"Voor reacties en bewaring van vloeistoffen" },
+    { img:"Gegradueerde_pipet.png", benaming:"Gegradueerde pipet", uitleg:"Voor nauwkeurig afmeten van volumes" },
+    { img:"Horlogeglas.png", benaming:"Horlogeglas", uitleg:"Als deksel of voor het drogen van stoffen" },
+
+    { img:"Liebigkoeler.png", benaming:"Liebigkoeler", uitleg:"Voor condensatie van dampen" },
+    { img:"Maatcilinder.png", benaming:"Maatcilinder", uitleg:"Voor nauwkeurig meten van volumes" },
+    { img:"Maatkolf.png", benaming:"Maatkolf", uitleg:"Voor het bereiden van standaardoplossingen" },
+
+    { img:"Petrischaal.png", benaming:"Petrischaal", uitleg:"Voor kweken van bacteriën/cellen" },
+    { img:"Platbodemkolf.png", benaming:"Platbodemkolf", uitleg:"Voor reacties en destillatie" },
+    { img:"Proefbuis.png", benaming:"Proefbuis", uitleg:"Voor kleine hoeveelheden reacties" },
+
+    { img:"Roerstaaf.png", benaming:"Roerstaaf", uitleg:"Voor het mengen van stoffen" },
+    { img:"Rondbodemkolf.png", benaming:"Rondbodemkolf", uitleg:"Voor verhitting en reacties" },
+    { img:"Scheitrechter.png", benaming:"Scheitrechter", uitleg:"Voor het scheiden van vloeistoffen" },
+
+    { img:"Thermometer.png", benaming:"Thermometer", uitleg:"Voor temperatuurmeting" },
+    { img:"Trechter.png", benaming:"Trechter", uitleg:"Voor overgieten zonder morsen" },
+    { img:"Volumepipet.png", benaming:"Volumepipet", uitleg:"Voor nauwkeurig afmeten van vaste volumes" },
+
+    { img:"Analytische_balans.png", benaming:"Analytische balans", uitleg:"Voor nauwkeurig wegen" },
+    { img:"Bunsenbrander.png", benaming:"Bunsenbrander", uitleg:"Voor verhitting" },
+    { img:"Driepikkel_met_Draadnet.png", benaming:"Driepikkel met Draadnet", uitleg:"Voor ondersteuning bij verhitting" },
+
+    { img:"Elektronische_balans.png", benaming:"Elektronische balans", uitleg:"Voor wegen van stoffen" },
+    { img:"Handschoenen.png", benaming:"Handschoenen", uitleg:"Voor bescherming van handen" },
+    { img:"Kroesje.png", benaming:"Kroesje", uitleg:"Voor verhitting bij hoge temperaturen" },
+
+    { img:"Kroesklem.png", benaming:"Kroesklem", uitleg:"Voor het vasthouden van kroesjess" },
+    { img:"Mortier_en_stamper.png", benaming:"Mortier en stamper", uitleg:"Voor het vermalen van stoffen" },
+    { img:"Noot_en_klem.png", benaming:"Noot en klem", uitleg:"Voor bevestiging aan statief" },
+
+    { img:"Pasteurpipet.png", benaming:"Pasteurpipet", uitleg:"Voor druppelsgewijze toevoeging" },
+    { img:"Pipetteerballon.png", benaming:"Pipetteerballon", uitleg:"Voor veilig pipetteren" },
+    { img:"Proefbuisborstel.png", benaming:"Proefbuisborstel", uitleg:"Voor reiniging van proefbuizen" },
+
+    { img:"Proefbuisklem.png", benaming:"Proefbuisklem", uitleg:"Voor vasthouden van warme proefbuizen" },
+    { img:"Spatel.png", benaming:"Spatel", uitleg:"Voor het overbrengen van vaste stoffen" },
+    { img:"Spuitfles.png", benaming:"Spuitfles", uitleg:"Voor spoelen en reinigen" },
+
+    { img:"Statief.png", benaming:"Statief", uitleg:" Voor ondersteuning van apparatuur " },
+    { img:"Weegschuitje.png", benaming:"Weegschuitje", uitleg:"Voor wegen van stoffen" },
+  ];
+
+  function dataset() {
+    return document.getElementById('dataset').value === 'gevaren' ? DATA_GEVAREN : DATA_MATERIALEN;
+  }
+
+  // Utilities
+  const rnd = (n) => Math.floor(Math.random()*n);
+  function shuffle(a){ const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]];} return b; }
+  function pickN(arr, n){ return shuffle(arr).slice(0,n); }
+  function saveStat(key, good){ const sKey = `stats:${document.getElementById('dataset').value}:${document.getElementById('mode').value}`; const s = JSON.parse(localStorage.getItem(sKey) || '{"correct":0,"wrong":0}'); if(good) s.correct++; else s.wrong++; localStorage.setItem(sKey, JSON.stringify(s)); renderStats(); }
+  function renderStats(){ const sKey = `stats:${document.getElementById('dataset').value}:${document.getElementById('mode').value}`; const s = JSON.parse(localStorage.getItem(sKey) || '{"correct":0,"wrong":0}'); document.getElementById('s-correct').textContent = s.correct; document.getElementById('s-wrong').textContent = s.wrong; }
+
+  // ---------- MODES ----------
+  function renderFlash() {
+    const d = dataset();
+    const item = d[rnd(d.length)];
+    const stage = document.getElementById('stage');
+    stage.innerHTML = `
+      <div class="flash">
+        <img class="symbol" alt="symbool" src="${IMG_BASE[document.getElementById('dataset').value]}${item.img}"/>
+        <div class="label pill">klik op de kaart om te wisselen: symbool → benaming → uitleg</div>
+        <div class="row">
+          <button class="ghost" id="toggle">Wissel</button>
+          <button class="primary" id="next">Volgende symbool</button>
+        </div>
+      </div>`;
+    const imgSrc = `${IMG_BASE[document.getElementById('dataset').value]}${item.img}`;
+    const flash = stage.querySelector('.flash');
+    let step = 0;
+    function show() {
+      if(step%3===0){
+        flash.innerHTML = `
+          <img class="symbol" alt="symbool" src="${imgSrc}"/>
+          <div class="label pill">symbool</div>
+          <div class="row"><button class="ghost" id="toggle">Wissel</button><button class="primary" id="next">Volgende symbool</button></div>`;
+      }else if(step%3===1){
+        flash.innerHTML = `
+          <div class="label" style="font-size:24px">${item.benaming}</div>
+          <div class="label pill">benaming</div>
+          <div class="row"><button class="ghost" id="toggle">Wissel</button><button class="primary" id="next">Volgende symbool</button></div>`;
+      }else{
+        flash.innerHTML = `
+          <div class="label" style="max-width:700px">${item.uitleg}</div>
+          <div class="label pill">uitleg</div>
+          <div class="row"><button class="ghost" id="toggle">Wissel</button><button class="primary" id="next">Volgende symbool</button></div>`;
+      }
+      flash.querySelector('#toggle').onclick = ()=>{ step++; show(); };
+      flash.querySelector('#next').onclick = () => renderFlash();
+    }
+    show();
+  }
+
+  function renderMC(map) {
+    // map = { q: "sym|ben|uitleg", a: "sym|ben|uitleg" }
+    const d = dataset();
+    const item = d[rnd(d.length)];
+    const wrongs = pickN(d.filter(x => x !== item), 3);
+    const get = (k, it) => k==="sym" ? `<img class="img-sm" src="${IMG_BASE[document.getElementById('dataset').value]}${it.img}" alt="symbool">` :
+                        (k==="ben" ? it.benaming : it.uitleg);
+    const options = shuffle([item, ...wrongs]).map(it => ({it, html:get(map.a, it)}));
+    const question = get(map.q, item);
+    const stage = document.getElementById('stage');
+    stage.innerHTML = `
+      <div class="stack">
+        <div class="qbox">${question}</div>
+        <div class="grid" id="opts"></div>
+      </div>`;
+    const opts = stage.querySelector('#opts');
+    options.forEach(({it, html}) => {
+      const el = document.createElement('div');
+      el.className = 'mc-option';
+      el.innerHTML = html;
+      el.onclick = () => {
+        if(it === item){ el.classList.add('correct'); saveStat('mc', true); }
+        else { el.classList.add('wrong'); saveStat('mc', false); }
+        setTimeout(()=> document.getElementById('start').click(), 700);
+      };
+      opts.appendChild(el);
+    });
+  }
+
+  function renderMatch(leftKey, rightKey) {
+    const d = shuffle(dataset()).slice(0, Math.min(6, dataset().length)); // 6 paren per ronde
+    const get = (k, it) => k==="sym" ? `<img src="${IMG_BASE[document.getElementById('dataset').value]}${it.img}" alt="symbool">` :
+                        (k==="ben" ? it.benaming : it.uitleg);
+    const rightItems = shuffle(d.map(it => ({key: get(rightKey, it), id: it.img})));
+    const stage = document.getElementById('stage');
+    stage.innerHTML = `
+      <div class="two-cols">
+        <div class="stack">
+          ${d.map(it => `
+            <div class="pair">
+              <div class="qbox">${get(leftKey, it)}</div>
+              <select data-id="${it.img}">
+                <option value="">— kies —</option>
+                ${rightItems.map(r => `<option value="${r.id}">${r.key.replaceAll('<','&lt;')}</option>`).join('')}
+              </select>
+            </div>
+          `).join('')}
+          <button class="primary" id="check">Nakijken</button>
+        </div>
+        <div class="card">
+          <div class="hint">Kies bij elk item de juiste partner.</div>
+          <ul style="line-height:1.8">
+            ${rightItems.map(r => `<li>${r.key}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+    `;
+    stage.querySelector('#check').onclick = () => {
+      let correct = 0, total = d.length;
+      stage.querySelectorAll('select').forEach(sel => {
+        if(sel.value === sel.dataset.id){ correct++; sel.style.borderColor = '#1c7c4a'; }
+        else { sel.style.borderColor = '#7c1c1c'; }
+      });
+      if(correct === total) saveStat('match', true); else saveStat('match', false);
+    };
+  }
+
+  function renderFillPredict() {
+    const d = dataset();
+    const item = d[rnd(d.length)];
+    const words = d.map(x => x.benaming);
+    const base = IMG_BASE[document.getElementById('dataset').value];
+
+    const stage = document.getElementById('stage');
+    stage.innerHTML = `
+      <div class="stack">
+        <div class="qbox row" style="align-items:flex-start">
+          <img src="${base}${item.img}" class="img-sm" alt="symbool">
+          <div style="flex:1">
+            <div class="hint">Typ de <strong>benaming</strong> exact en gebruik de voorspeller indien nodig.</div>
+            <div class="suggestions">
+              <input type="text" id="answer" placeholder="Benaming… (exact)"/>
+              <div id="slist" class="suggestions-list hidden"></div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <button class="primary" id="check">Nakijken</button>
+          <button id="show">Toon oplossing</button>
+        </div>
+      </div>
+    `;
+    const input = stage.querySelector('#answer');
+    const slist = stage.querySelector('#slist');
+    function updateList() {
+      const v = input.value.toLowerCase();
+      const items = words.filter(w => w.toLowerCase().includes(v)).slice(0, 8);
+      if(!v){ slist.classList.add('hidden'); slist.innerHTML = ''; return; }
+      slist.classList.remove('hidden');
+      slist.innerHTML = items.map(w => `<div>${w}</div>`).join('');
+      slist.querySelectorAll('div').forEach(div => {
+        div.onclick = ()=> { input.value = div.textContent; slist.classList.add('hidden'); };
+      });
+    }
+    input.oninput = updateList;
+    input.onfocus = updateList;
+    input.onblur = ()=> setTimeout(()=> slist.classList.add('hidden'), 150);
+
+    stage.querySelector('#check').onclick = ()=> {
+      if(input.value.trim() === item.benaming){ saveStat('fill', true); input.style.borderColor = '#1c7c4a'; }
+      else { saveStat('fill', false); input.style.borderColor = '#7c1c1c'; }
+    };
+    stage.querySelector('#show').onclick = ()=> { input.value = item.benaming; input.style.borderColor = '#1c7c4a'; };
+  }
+
+  // Router
+  function start() {
+    renderStats();
+    const mode = document.getElementById('mode').value;
+    if(mode==='flash') return renderFlash();
+    if(mode==='mc_sym_ben') return renderMC({q:'sym', a:'ben'});
+    if(mode==='mc_sym_uitleg') return renderMC({q:'sym', a:'uitleg'});
+    if(mode==='mc_ben_uitleg') return renderMC({q:'ben', a:'uitleg'});
+    if(mode==='mc_ben_sym') return renderMC({q:'ben', a:'sym'});
+    if(mode==='mc_uitleg_sym') return renderMC({q:'uitleg', a:'sym'});
+    if(mode==='mc_uitleg_ben') return renderMC({q:'uitleg', a:'ben'});
+    if(mode==='match_ben_uitleg') return renderMatch('ben', 'uitleg');
+    if(mode==='match_uitleg_ben') return renderMatch('uitleg', 'ben');
+    if(mode==='match_sym_uitleg') return renderMatch('sym', 'uitleg');
+    if(mode==='match_sym_ben') return renderMatch('sym', 'ben');
+    if(mode==='fill_predict_sym_ben') return renderFillPredict();
+  }
+
+  document.getElementById('start').onclick = start;
+  document.getElementById('dataset').onchange = start;
+  document.getElementById('mode').onchange = start;
+  // initial
+  start();
+  </script>
+</body>
+</html>
